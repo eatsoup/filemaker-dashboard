@@ -1,0 +1,68 @@
+{{define "content"}}
+<h1>Usage Dashboard</h1>
+<p class="muted last-sync">
+  {{if .LastSync}}Last sync: {{.LastSync}}{{end}}
+  {{if and .FirstRecord .LastRecord}} &middot; Data: {{.FirstRecord}} → {{.LastRecord}}{{end}}
+</p>
+
+<form id="filters" class="filters">
+  <div class="row">
+    <label>From <input type="date" name="from" value="{{.From}}"></label>
+    <label>To <input type="date" name="to" value="{{.To}}"></label>
+    <label>Group by
+      <select name="group_by">
+        <option value="user" {{if eq .Defaults.GroupBy "user"}}selected{{end}}>User</option>
+        <option value="database" {{if eq .Defaults.GroupBy "database"}}selected{{end}}>Database</option>
+      </select>
+    </label>
+  </div>
+  <div class="row quarters">
+    <span class="quick-label">Quarter</span>
+    <select data-quarter-year aria-label="Year"></select>
+    <button type="button" data-quarter="1">Q1</button>
+    <button type="button" data-quarter="2">Q2</button>
+    <button type="button" data-quarter="3">Q3</button>
+    <button type="button" data-quarter="4">Q4</button>
+  </div>
+  <div class="row">
+    <label class="grow">Min duration: <span id="minLabel">0s</span>
+      <input type="range" name="min_duration" min="0" max="3600" value="{{.Defaults.MinDuration}}" step="10">
+    </label>
+    <label class="grow">Min unique users: <span id="minUsersLabel">1+</span>
+      <input type="range" name="min_users" min="1" max="20" value="{{or .Defaults.MinUsers 1}}" step="1">
+    </label>
+  </div>
+  <div class="row">
+    <label class="grow">Exclude users
+      <select name="exclude_users" multiple size="6">
+        {{range .Accounts}}<option value="{{.}}" {{if contains $.Defaults.ExcludeUsers .}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </label>
+    <label class="grow">Exclude databases
+      <select name="exclude_databases" multiple size="6">
+        {{range .Databases}}<option value="{{.}}" {{if contains $.Defaults.ExcludeDatabases .}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </label>
+  </div>
+  <div class="row">
+    <button type="submit">Apply</button>
+    <button type="button" id="resetBtn">Reset</button>
+    <button type="button" id="reportBtn">Generate report</button>
+  </div>
+</form>
+
+<div class="summary">
+  <div class="stat"><div class="num" id="statSessions">–</div><div class="lbl">Sessions</div></div>
+  <div class="stat"><div class="num" id="statHours">–</div><div class="lbl">Total hours</div></div>
+  <div class="stat"><div class="num" id="statUsers">–</div><div class="lbl">Users</div></div>
+  <div class="stat"><div class="num" id="statDBs">–</div><div class="lbl">Databases</div></div>
+</div>
+
+<div class="card">
+  <canvas id="chart" height="120"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="/static/date-shortcuts.js"></script>
+<script src="/static/dashboard.js"></script>
+{{end}}

@@ -1,0 +1,39 @@
+{{define "content"}}
+<h1>Users</h1>
+
+<div class="card">
+  <h2>Add user</h2>
+  <form method="post" action="/users" class="stacked">
+    <label>Username <input type="text" name="username" required></label>
+    <label>Password <input type="password" name="password" required minlength="6"></label>
+    <label class="checkbox"><input type="checkbox" name="is_admin" value="1"> Admin</label>
+    <button type="submit">Create</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Existing users</h2>
+  <table class="data">
+    <thead><tr><th>Username</th><th>Admin</th><th>Created</th><th></th></tr></thead>
+    <tbody>
+      {{range .Users}}
+      <tr>
+        <td>{{.Username}}</td>
+        <td>{{if .IsAdmin}}yes{{else}}no{{end}}</td>
+        <td>{{.CreatedAt.Format "2006-01-02"}}</td>
+        <td>
+          {{if ne .ID $.Me.ID}}
+          <form method="post" action="/users/delete" class="inline" onsubmit="return confirm('Delete {{.Username}}?')">
+            <input type="hidden" name="id" value="{{.ID}}">
+            <button type="submit" class="danger">Delete</button>
+          </form>
+          {{else}}
+          <span class="muted">(you)</span>
+          {{end}}
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+{{end}}

@@ -1,0 +1,116 @@
+{{define "content"}}
+<h1>Monthly report</h1>
+
+<form method="get" action="/report" class="filters">
+  <div class="row">
+    <label>From <input type="date" name="from" value="{{.From}}"></label>
+    <label>To <input type="date" name="to" value="{{.To}}"></label>
+    <label>Group by
+      <select name="group_by">
+        <option value="user" {{if eq .GroupBy "user"}}selected{{end}}>User</option>
+        <option value="database" {{if eq .GroupBy "database"}}selected{{end}}>Database</option>
+      </select>
+    </label>
+    <label>Min duration (s) <input type="number" name="min_duration" min="0" value="{{.MinDuration}}"></label>
+    <label>Min unique users <input type="number" name="min_users" min="0" value="{{.MinUsers}}"></label>
+    {{range .ExcludeUsers}}<input type="hidden" name="exclude_users" value="{{.}}">{{end}}
+    {{range .ExcludeDatabases}}<input type="hidden" name="exclude_databases" value="{{.}}">{{end}}
+    <button type="submit">Run</button>
+    <a href="/" class="muted" style="align-self:center;margin-left:8px;">← Back to dashboard</a>
+  </div>
+  <div class="row quarters">
+    <span class="quick-label">Quarter</span>
+    <select data-quarter-year aria-label="Year"></select>
+    <button type="button" data-quarter="1">Q1</button>
+    <button type="button" data-quarter="2">Q2</button>
+    <button type="button" data-quarter="3">Q3</button>
+    <button type="button" data-quarter="4">Q4</button>
+  </div>
+</form>
+<script src="/static/date-shortcuts.js"></script>
+
+{{if .BillingCols}}
+<div class="card">
+  <h2>Monthly billing report</h2>
+  <p class="muted">Period: {{.PeriodLabel}}, group by: {{.GroupBy}}, min duration: {{.MinDuration}}s, min unique users: {{.MinUsers}}</p>
+  <table class="data billing-summary">
+    <tbody>
+      {{range .BillingCols}}
+      <tr><td>{{.Month}}</td><td class="num">{{.DBCount}}</td></tr>
+      {{end}}
+    </tbody>
+    <tfoot>
+      <tr><td>Total</td><td class="num"><strong>{{.BillingTotal}}</strong></td></tr>
+    </tfoot>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Billing — databases used per month</h2>
+  <p class="muted">Each column is one calendar month. The header number is the count of distinct databases that had usage above the minimum-duration threshold — the figure to bill on. Cells show the number of distinct users on that database that month.</p>
+  <table class="data billing">
+    <thead>
+      <tr>
+        <th></th>
+        {{range .BillingCols}}<th class="num">{{.Month}}</th>{{end}}
+      </tr>
+      <tr class="bigrow">
+        <th>Databases this month</th>
+        {{range .BillingCols}}<th class="num"><span class="big">{{.DBCount}}</span></th>{{end}}
+      </tr>
+      <tr>
+        <th>Total hours</th>
+        {{range .BillingCols}}<th class="num">{{.TotalHrs}}</th>{{end}}
+      </tr>
+    </thead>
+    <tbody>
+      {{range .BillingRows}}
+      <tr>
+        <td>{{.Database}}</td>
+        {{range .Cells}}<td class="num check">{{.}}</td>{{end}}
+      </tr>
+      {{end}}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td>Total active months</td>
+        {{range .BillingCols}}<td class="num">{{.DBCount}}</td>{{end}}
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{{end}}
+
+{{if .Months}}
+<div class="card">
+  <h2>Hours per {{.GroupBy}} per month</h2>
+  <table class="data">
+    <thead>
+      <tr>
+        <th>{{.Header}}</th>
+        {{range .Months}}<th>{{.}}</th>{{end}}
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Rows}}
+      <tr>
+        <td>{{.Key}}</td>
+        {{range .Cells}}<td class="num">{{.}}</td>{{end}}
+        <td class="num"><strong>{{.Total}}</strong></td>
+      </tr>
+      {{end}}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td>Total</td>
+        {{range .Totals}}<td class="num">{{.}}</td>{{end}}
+        <td class="num"><strong>{{.GrandTotal}}</strong></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{{else}}
+<p class="muted">No data in the selected range.</p>
+{{end}}
+{{end}}

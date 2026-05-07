@@ -1,0 +1,5 @@
+*.db
+*.yaml
+!config.example.yaml
+filemaker-dashboard
+

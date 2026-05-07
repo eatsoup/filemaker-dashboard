@@ -1,0 +1,32 @@
+# Path to the FileMaker Server access log
+logfile_path: /Library/FileMaker Server/Logs/Access.log
+
+# SQLite database file (created on first run)
+db_path: filemaker.db
+
+# Web server listen address
+listen_addr: :8080
+
+# How often to scan the logfile for new entries
+ingest_interval: 10m
+
+# How long a login session lasts
+session_ttl: 168h
+
+# Initial admin user — created on first run if no users exist
+initial_admin:
+  username: admin
+  password: changeme
+
+# Optional UI defaults. Applied on initial dashboard/report load; once the user
+# submits a form, the URL is the source of truth. Any field can be omitted.
+# defaults:
+#   min_duration: 60          # seconds
+#   min_users: 2              # 1 disables the threshold
+#   group_by: database        # "user" or "database"
+#   exclude_users:
+#     - admin
+#     - service-account
+#   exclude_databases:
+#     - scratch.fmp12
+#     - test.fmp12

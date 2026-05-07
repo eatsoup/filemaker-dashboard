@@ -1,0 +1,28 @@
+{{define "base"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} - FileMaker Usage</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><a href="/">FileMaker Usage</a></div>
+  <nav>
+    {{if .User}}
+      <a href="/" class="{{if eq .Active "dashboard"}}active{{end}}">Dashboard</a>
+      {{if .User.IsAdmin}}<a href="/users" class="{{if eq .Active "users"}}active{{end}}">Users</a>{{end}}
+      <a href="/account" class="{{if eq .Active "account"}}active{{end}}">Account</a>
+      <span class="who">{{.User.Username}}{{if .User.IsAdmin}} (admin){{end}}</span>
+      <form method="post" action="/logout" class="inline"><button type="submit" class="link">Log out</button></form>
+    {{end}}
+  </nav>
+</header>
+<main>
+{{if .Flash}}<div class="flash {{.FlashKind}}">{{.Flash}}</div>{{end}}
+{{template "content" .}}
+</main>
+<footer>FileMaker Usage Dashboard</footer>
+</body>
+</html>{{end}}
