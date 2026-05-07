@@ -213,7 +213,26 @@ func (b *IngestBatch) Rollback() error { return b.tx.Rollback() }
 // Returns true if a new row was actually inserted; INSERT OR IGNORE makes
 // re-processing the same open line idempotent against the natural-key
 // unique index.
+//
+// FileMaker Server sometimes silently drops sessions on abrupt disconnects
+// (network loss, server hangs/restarts) without writing a "closing database"
+// line — the only signal that the prior session has ended is a fresh
+// "opening database" for the same (client_id, database, account) triple.
+// To stop those orphans accumulating, any in-flight row for that triple
+// with start_time strictly earlier than the new open is closed off at the
+// new open's timestamp before we insert.
 func (b *IngestBatch) OpenSession(sess Session) (bool, error) {
+	if _, err := b.tx.Exec(
+		`UPDATE sessions
+            SET end_time = ?, duration_seconds = ? - start_time
+          WHERE client_id = ? AND database_name = ? AND account_name = ?
+            AND end_time IS NULL AND start_time < ?`,
+		sess.StartTime.Unix(), sess.StartTime.Unix(),
+		sess.ClientID, sess.Database, sess.Account,
+		sess.StartTime.Unix(),
+	); err != nil {
+		return false, err
+	}
 	res, err := b.tx.Exec(
 		`INSERT OR IGNORE INTO sessions (start_time, client_name, client_id, account_name, database_name, host, ip, server)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -227,6 +246,31 @@ func (b *IngestBatch) OpenSession(sess Session) (bool, error) {
 		return false, err
 	}
 	return n > 0, nil
+}
+
+// CloseAbandonedSessions closes any session whose start_time is older than
+// abandonedAfter and which still has end_time IS NULL — a fallback for
+// sessions the dashboard would otherwise never see closed (clients that
+// crashed, were force-disconnected, or whose closing line never made it
+// to the log). The synthetic end_time is start_time + abandonedAfter so
+// every reaped row gets a fixed, predictable duration regardless of how
+// long ago it actually opened. Returns the number of rows closed.
+func (s *Store) CloseAbandonedSessions(now time.Time, abandonedAfter time.Duration) (int64, error) {
+	if abandonedAfter <= 0 {
+		return 0, nil
+	}
+	ttl := int64(abandonedAfter.Seconds())
+	cutoff := now.Unix() - ttl
+	res, err := s.db.Exec(
+		`UPDATE sessions
+            SET end_time = start_time + ?, duration_seconds = ?
+          WHERE end_time IS NULL AND start_time <= ?`,
+		ttl, ttl, cutoff,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
 }
 
 // CloseSession finds the oldest in-flight session matching (client_id, db, account)

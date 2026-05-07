@@ -13,6 +13,12 @@ ingest_interval: 10m
 # How long a login session lasts
 session_ttl: 168h
 
+# Force-close FileMaker sessions still in-flight after this long. FileMaker
+# Server occasionally drops sessions without writing a "closing database"
+# line; without this, those rows would never appear in usage totals. Set to
+# 0 to disable.
+abandoned_session_after: 12h
+
 # Initial admin user — created on first run if no users exist
 initial_admin:
   username: admin
