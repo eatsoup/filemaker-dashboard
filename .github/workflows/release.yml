@@ -1,0 +1,39 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        env:
+          CGO_ENABLED: '0'
+          GOOS: linux
+          GOARCH: ${{ matrix.arch }}
+        run: |
+          go build -trimpath -ldflags="-s -w" \
+            -o filemaker-dashboard-linux-${{ matrix.arch }} .
+          sha256sum filemaker-dashboard-linux-${{ matrix.arch }} \
+            > filemaker-dashboard-linux-${{ matrix.arch }}.sha256
+
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            filemaker-dashboard-linux-${{ matrix.arch }}
+            filemaker-dashboard-linux-${{ matrix.arch }}.sha256
+          fail_on_unmatched_files: true

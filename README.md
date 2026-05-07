@@ -59,6 +59,27 @@ The `initial_admin` block creates the first admin account on first run only — 
 
 Then open `http://localhost:8080` and sign in with the configured admin credentials.
 
+## Install as a systemd service (Linux)
+
+`scripts/install.sh` wraps the standard FHS layout — binary at `/usr/local/bin/filemaker-dashboard`, config at `/etc/filemaker-dashboard/config.yaml`, SQLite + state at `/var/lib/filemaker-dashboard/`, running as the dedicated `filemaker-dashboard` system user.
+
+```sh
+# build from source and install + enable the service
+sudo ./scripts/install.sh install
+
+# pull the latest release binary for this arch and restart
+sudo ./scripts/install.sh update
+
+# stop, disable, remove (keeps config and DB)
+sudo ./scripts/install.sh uninstall
+
+sudo ./scripts/install.sh status
+```
+
+`install` seeds `/etc/filemaker-dashboard/config.yaml` from `config.example.yaml` and rewrites `db_path` to `/var/lib/filemaker-dashboard/filemaker.db`. Edit `logfile_path` and `initial_admin` before the first start; the script will defer starting the service if it detects the example logfile path is still present.
+
+`update` downloads `filemaker-dashboard-linux-<amd64|arm64>` from the latest GitHub release, verifies its `.sha256`, swaps the binary atomically (keeping a `.prev` until the restart succeeds), and rolls back if the service fails to come up.
+
 ### Importing an old/rotated log
 
 To backfill from a rotated log file (without disturbing the live ingest cursor):
