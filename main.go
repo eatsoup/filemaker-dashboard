@@ -69,7 +69,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	ing := ingest.New(s, cfg.LogfilePath, cfg.IngestInterval, logger)
+	ing := ingest.New(s, cfg.LogfilePath, cfg.IngestInterval, cfg.AbandonedSessionAfter, logger)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()

@@ -14,7 +14,13 @@ type Config struct {
 	ListenAddr     string        `yaml:"listen_addr"`
 	IngestInterval time.Duration `yaml:"ingest_interval"`
 	SessionTTL     time.Duration `yaml:"session_ttl"`
-	InitialAdmin   struct {
+	// AbandonedSessionAfter is the age past which a still-open FileMaker
+	// session is presumed silently disconnected and force-closed by the
+	// ingester. FileMaker Server occasionally drops sessions without
+	// writing a "closing database" line; without this, those rows would
+	// stay end_time=NULL forever and never appear in usage totals.
+	AbandonedSessionAfter time.Duration `yaml:"abandoned_session_after"`
+	InitialAdmin          struct {
 		Username string `yaml:"username"`
 		Password string `yaml:"password"`
 	} `yaml:"initial_admin"`
@@ -37,10 +43,11 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("read config: %w", err)
 	}
 	c := &Config{
-		DBPath:         "filemaker.db",
-		ListenAddr:     ":8080",
-		IngestInterval: 10 * time.Minute,
-		SessionTTL:     7 * 24 * time.Hour,
+		DBPath:                "filemaker.db",
+		ListenAddr:            ":8080",
+		IngestInterval:        10 * time.Minute,
+		SessionTTL:            7 * 24 * time.Hour,
+		AbandonedSessionAfter: 12 * time.Hour,
 	}
 	if err := yaml.Unmarshal(data, c); err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)

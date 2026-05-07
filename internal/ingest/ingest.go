@@ -16,20 +16,27 @@ import (
 )
 
 type Ingester struct {
-	store    *store.Store
-	logfile  string
-	interval time.Duration
-	logger   *slog.Logger
+	store          *store.Store
+	logfile        string
+	interval       time.Duration
+	abandonedAfter time.Duration
+	logger         *slog.Logger
 
 	mu      sync.Mutex
 	running bool
 }
 
-func New(s *store.Store, logfile string, interval time.Duration, logger *slog.Logger) *Ingester {
+func New(s *store.Store, logfile string, interval, abandonedAfter time.Duration, logger *slog.Logger) *Ingester {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Ingester{store: s, logfile: logfile, interval: interval, logger: logger}
+	return &Ingester{
+		store:          s,
+		logfile:        logfile,
+		interval:       interval,
+		abandonedAfter: abandonedAfter,
+		logger:         logger,
+	}
 }
 
 // Run blocks until ctx is cancelled. It runs an initial pass immediately,
@@ -273,9 +280,18 @@ func (i *Ingester) ingestFile(ctx context.Context, path string, st *store.Ingest
 	}
 	committed = true
 
+	var reaped int64
+	if advanceCursor && i.abandonedAfter > 0 {
+		n, err := i.store.CloseAbandonedSessions(time.Now(), i.abandonedAfter)
+		if err != nil {
+			i.logger.Warn("close abandoned sessions failed", "err", err)
+		}
+		reaped = n
+	}
+
 	i.logger.Info("sync finished",
 		"lines", lineNum, "db_opens", opens, "db_closes", closes,
-		"parse_errs", parseErrs,
+		"parse_errs", parseErrs, "reaped_abandoned", reaped,
 		"marker_ts", newestTs, "marker_hash_short", shortHash(newestHash),
 		"duration", time.Since(syncStart).Round(time.Millisecond))
 	return nil
