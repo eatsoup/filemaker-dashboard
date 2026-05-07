@@ -1,0 +1,28 @@
+[Unit]
+Description=FileMaker Usage Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=filemaker-dashboard
+Group=filemaker-dashboard
+WorkingDirectory=/var/lib/filemaker-dashboard
+ExecStart=/usr/local/bin/filemaker-dashboard --config /etc/filemaker-dashboard/config.yaml
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+ReadWritePaths=/var/lib/filemaker-dashboard
+
+[Install]
+WantedBy=multi-user.target
